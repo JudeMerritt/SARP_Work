@@ -1,9 +1,28 @@
-//TODO: add improved comments with @brief
+/**
+ * This file is part of the Titan Flight Computer Project
+ * Copyright (c) 2025 UW SARP
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3.
+ * 
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * 
+ * @file sensors/include/barometer.c
+ * @authors Jude Merritt
+ * @brief MS561101BA03 Barometer driver
+ */
 
 #include <stdint.h>
 #include "periphs/include/spi.h"
 #include "util/include/errc.h"
-#include "util/include/delay.h"
+#include "periphs/include/systick.h"
 #include "sensors/include/barometer.h"
 
 #define D1_BASE_CMD 0x40
@@ -23,12 +42,12 @@ typedef enum {
     PROM_ADDR_CRC          = 0xAE
 }prom_addr_t;
 
-// Detailed comment goes here
+// Provides the necessary conversion time delay based on the specified oversampling ratio (OSR) using the SysTick timer.
 static ti_errc_t barometer_delay(uint8_t osr) {
     uint8_t conversion_time;
 
    /*
-    * These conversion times are based on the following table:
+    * The conversion times are based on the following table:
     * OSR   Min.   Max.
     * 4096  7.40   9.04
     * 2048  3.72   4.54
@@ -36,14 +55,13 @@ static ti_errc_t barometer_delay(uint8_t osr) {
     * 512   0.95   1.17
     * 256   0.48   0.60
     */
-    switch (osr) { // TODO: move this into your validate config function
+    switch (osr) { 
         case (OSR_256):  conversion_time = 1;  break;
         case (OSR_512):  conversion_time = 2;  break;
         case (OSR_1024): conversion_time = 3;  break;
         case (OSR_2048): conversion_time = 5;  break;
         case (OSR_4096): conversion_time = 10; break;
-        default:
-            return TI_ERRC_INVALID_ARG;
+        default: return TI_ERRC_INVALID_ARG;
     }
 
     delay(conversion_time);
@@ -51,9 +69,7 @@ static ti_errc_t barometer_delay(uint8_t osr) {
     return TI_ERRC_NONE;
 }
 
-// Detailed comment goes here
-// TODO: If SPI fails, result may just be zero and no error will be detected. You may be able to pass
-//       a pointer for result and return an enum error code instead.
+// Sends a command to the sensor and reads the multi-byte response.
 static uint32_t barometer_transfer(barometer_t *dev, uint8_t cmd, uint8_t bytes_to_read) {
     uint8_t tx[4] = {cmd, 0, 0, 0};
     uint8_t rx[4] = {0, 0, 0, 0};
@@ -64,8 +80,8 @@ static uint32_t barometer_transfer(barometer_t *dev, uint8_t cmd, uint8_t bytes_
         .source = tx,
         .dest = rx,
         .size = bytes_to_read + 1,
-        .timeout = 100,            // TODO: Assumed this is a safe timeout (100 ms). Double check if people want it lower.
-        .read_inc = true // TODO: This may be a problem. Why is there no write_inc
+        .timeout = 1, 
+        .read_inc = true
     };
 
     spi_block(dev->device);
@@ -85,22 +101,21 @@ static uint32_t barometer_transfer(barometer_t *dev, uint8_t cmd, uint8_t bytes_
  * @section Public Function Implementations
  **************************************************************************************************/
 
-// Detailed comment goes here
 ti_errc_t barometer_init(barometer_t *dev) {
     // Reset the sensor
     barometer_transfer(dev, RESET, 0);
 
     // Wait for internal reload
     ti_errc_t status = barometer_delay(dev->osr); 
-    if (status != TI_ERRC_NONE) return status; // TODO: I think it would be better if you did a param validity check at beginning, then just call delay by itself
+    if (status != TI_ERRC_NONE) return status;
 
     // Read PROM values
-    dev->config_data.sens     = (uint32_t)barometer_transfer(dev, PROM_ADDR_C1, 2);
-    dev->config_data.off      = (uint32_t)barometer_transfer(dev, PROM_ADDR_C2, 2);
-    dev->config_data.tcs      = (uint32_t)barometer_transfer(dev, PROM_ADDR_C3, 2);
-    dev->config_data.tco      = (uint32_t)barometer_transfer(dev, PROM_ADDR_C4, 2);
-    dev->config_data.t_ref    = (uint32_t)barometer_transfer(dev, PROM_ADDR_C5, 2);
-    dev->config_data.tempsens = (uint32_t)barometer_transfer(dev, PROM_ADDR_C6, 2);
+    dev->config_data.sens     = (uint16_t)barometer_transfer(dev, PROM_ADDR_C1, 2);
+    dev->config_data.off      = (uint16_t)barometer_transfer(dev, PROM_ADDR_C2, 2);
+    dev->config_data.tcs      = (uint16_t)barometer_transfer(dev, PROM_ADDR_C3, 2);
+    dev->config_data.tco      = (uint16_t)barometer_transfer(dev, PROM_ADDR_C4, 2);
+    dev->config_data.t_ref    = (uint16_t)barometer_transfer(dev, PROM_ADDR_C5, 2);
+    dev->config_data.tempsens = (uint16_t)barometer_transfer(dev, PROM_ADDR_C6, 2);
 
     return TI_ERRC_NONE;
 }
@@ -124,7 +139,7 @@ ti_errc_t get_barometer_data(barometer_t *dev) {
 
     // Calculate initial offset and sensitivity
     int64_t off  = ((int64_t)dev->config_data.off << 16) + (((int64_t)dev->config_data.tco * dT) >> 7);
-    int64_t sens = ((int64_t)dev->config_data.sens << 15) +(((int64_t)dev->config_data.tcs * dT) >> 8);
+    int64_t sens = ((int64_t)dev->config_data.sens << 15) + (((int64_t)dev->config_data.tcs * dT) >> 8);
 
     // Second order temperature compensation
     int64_t T2    = 0;
@@ -143,6 +158,7 @@ ti_errc_t get_barometer_data(barometer_t *dev) {
             SENS2 = SENS2 + (11 * ((int64_t)(temp + 1500) * (temp + 1500)) >> 1);
         }
     }
+    
 
     temp -= T2;
     off  -= OFF2;
@@ -157,3 +173,23 @@ ti_errc_t get_barometer_data(barometer_t *dev) {
 
     return TI_ERRC_NONE;
 }
+
+/**
+ * TODOS:
+ * 1. Create a private function that verifies the parameters the numbers the user passes in.
+ * 
+ * 2. If SPI fails, result may just be zero and no error will be detected. You may be able to pass
+ *    a pointer for result and return an enum error code instead. (LINE 80)
+ * 
+ * 3. I think it would be better if you did a param validity check at beginning, then just call delay by itself. (LINE 117)
+ * 
+ * 4. Double check if you need the delay before reading from the ADC (think about a way to work around this)
+ * 
+ * 5. Would be best to do this as an interupt
+ * 
+ * 6. You should return the result struct 
+ * 
+ * 7. Take this out of the barometer_t struct and just create the result struct in your function then return a pointer to it. (inside .h)
+ * 
+ * 8. Include errc inside the result struct. 
+ */

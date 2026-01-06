@@ -60,7 +60,7 @@ typedef void (*i2c_callback_t)(bool success);
  * @return emun ti_errc_t, the error code inicating success (TI_ERRC_NONE), or a specific
  * error code if there is a failure. 
  */
-enum ti_errc_t i2c_init(i2c_config_t *config, dma_callback_t callback);
+ti_errc_t i2c_init(i2c_config_t *config, dma_callback_t callback);
 
 /**
  * @brief Reads data over I2C from the device with the given address. Asyncronous (DMA-powered) function.
@@ -70,7 +70,7 @@ enum ti_errc_t i2c_init(i2c_config_t *config, dma_callback_t callback);
  * @return emun ti_errc_t, the error code inicating success (TI_ERRC_NONE), or a specific
  * error code if there is a failure. 
  */
-enum ti_errc_t i2c_read_async(uint16_t addr, uint8_t *rx_data, size_t size);
+ti_errc_t i2c_read_async(uint16_t addr, uint8_t *rx_data, size_t size);
 
 /**
  * @brief Writes data over I2C to the device with the given address. Asyncronous (DMA-powered) function.
@@ -80,7 +80,7 @@ enum ti_errc_t i2c_read_async(uint16_t addr, uint8_t *rx_data, size_t size);
  * @return emun ti_errc_t, the error code inicating success (TI_ERRC_NONE), or a specific
  * error code if there is a failure. 
  */
-enum ti_errc_t i2c_write_async(uint16_t addr, uint8_t *tx_data, size_t size);
+ti_errc_t i2c_write_async(uint16_t addr, uint8_t *tx_data, size_t size);
 
 /**
  * @brief Reads data over I2C from the device with the given address. Blocking (syncronous) function.
@@ -90,7 +90,7 @@ enum ti_errc_t i2c_write_async(uint16_t addr, uint8_t *tx_data, size_t size);
  * @return emun ti_errc_t, the error code inicating success (TI_ERRC_NONE), or a specific
  * error code if there is a failure.
  */
-enum ti_errc_t i2c_read_blocking(uint16_t addr, uint8_t *tx_data, size_t size);
+ti_errc_t i2c_read_blocking(uint16_t addr, uint8_t *tx_data, size_t size);
 
 /**
  * @brief Writes data over I2C to the device with the given address. Blocking (syncronous) function.
@@ -99,4 +99,4 @@ enum ti_errc_t i2c_read_blocking(uint16_t addr, uint8_t *tx_data, size_t size);
  * @param size Number of bytes to write.
  * @return enum ti_errc_t, whether the transfer was successful.
  */
-enum ti_errc_t i2c_write_blocking(uint16_t addr, uint8_t *tx_data, size_t size);
+ti_errc_t i2c_write_blocking(uint16_t addr, uint8_t *tx_data, size_t size);

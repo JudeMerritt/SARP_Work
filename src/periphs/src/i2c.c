@@ -65,7 +65,7 @@ static dma_callback_t i2c_dma_callback = NULL;
 /**************************************************************************************************
  * @section Private Helper Functions
  **************************************************************************************************/
-inline static enum ti_errc_t check_i2c_config(i2c_config_t *config) {
+inline static ti_errc_t check_i2c_config(i2c_config_t *config) {
     if (config == NULL) {
         return TI_ERRC_INVALID_ARG; //I2C configuration struct is NULL
     }
@@ -81,7 +81,7 @@ inline static enum ti_errc_t check_i2c_config(i2c_config_t *config) {
     return TI_ERRC_NONE;
 }
 
-enum ti_errc_t i2c_transmit_check_params(uint16_t addr, uint8_t *buff, size_t size) {
+ti_errc_t i2c_transmit_check_params(uint16_t addr, uint8_t *buff, size_t size) {
     if (buff == NULL) {
         return TI_ERRC_INVALID_ARG; //Invalid buffer for I2C transmission
     }
@@ -94,8 +94,8 @@ enum ti_errc_t i2c_transmit_check_params(uint16_t addr, uint8_t *buff, size_t si
 /**************************************************************************************************
  * @section Public Function Implementation 
  **************************************************************************************************/
-enum ti_errc_t i2c_init(i2c_config_t *config, dma_callback_t callback) {
-    enum ti_errc_t errc;
+ti_errc_t i2c_init(i2c_config_t *config, dma_callback_t callback) {
+    ti_errc_t errc;
 
     // Check parameters
     if ((errc = check_i2c_config(config)) != TI_ERRC_NONE) return errc;
@@ -154,8 +154,8 @@ enum ti_errc_t i2c_init(i2c_config_t *config, dma_callback_t callback) {
     return TI_ERRC_NONE;
 }
 
-enum ti_errc_t i2c_read_async(uint16_t addr, uint8_t *rx_data, size_t size) {
-    enum ti_errc_t errc;
+ti_errc_t i2c_read_async(uint16_t addr, uint8_t *rx_data, size_t size) {
+    ti_errc_t errc;
 
     // Check parameters
     if ((errc = i2c_transmit_check_params(addr, rx_data, size)) != TI_ERRC_NONE) {
@@ -206,8 +206,8 @@ enum ti_errc_t i2c_read_async(uint16_t addr, uint8_t *rx_data, size_t size) {
     return TI_ERRC_NONE;
 }
 
-enum ti_errc_t i2c_write_async(uint16_t addr, uint8_t *tx_data, size_t size) {
-    enum ti_errc_t errc;
+ti_errc_t i2c_write_async(uint16_t addr, uint8_t *tx_data, size_t size) {
+    ti_errc_t errc;
 
     // 1. Check parameters
     if ((errc = (i2c_transmit_check_params(addr, tx_data, size))) != TI_ERRC_NONE) {
@@ -260,8 +260,8 @@ enum ti_errc_t i2c_write_async(uint16_t addr, uint8_t *tx_data, size_t size) {
     return TI_ERRC_NONE;
 }
 
-enum ti_errc_t i2c_read_blocking(uint16_t addr, uint8_t *rx_data, size_t size) {
-    enum ti_errc_t errc;
+ti_errc_t i2c_read_blocking(uint16_t addr, uint8_t *rx_data, size_t size) {
+    ti_errc_t errc;
 
     // Check parameters
     if ((errc = i2c_transmit_check_params(addr, rx_data, size)) != TI_ERRC_NONE) {
@@ -319,8 +319,8 @@ enum ti_errc_t i2c_read_blocking(uint16_t addr, uint8_t *rx_data, size_t size) {
     return TI_ERRC_NONE;
 }
 
-enum ti_errc_t i2c_write_blocking(uint16_t addr, uint8_t *tx_data, size_t size) {
-enum ti_errc_t errc;
+ti_errc_t i2c_write_blocking(uint16_t addr, uint8_t *tx_data, size_t size) {
+ti_errc_t errc;
 
     // 1. Check parameters
     if ((errc = i2c_transmit_check_params(addr, tx_data, size)) != TI_ERRC_NONE) {
