@@ -9,18 +9,18 @@ typedef enum {
 }led_t;
 
 typedef struct {
-    uint8_t port;         // Which port (GPIOB = 1, GPIOE = 4)
-    uint8_t pin;          // Which pin
+    uint8_t port; // Which port (GPIOB = 1, GPIOE = 4)
+    uint8_t pin;  // Which pin
 } led_config_t;
 
 static const led_config_t LED_MAP[] = {
-    [GREEN]  = {1, 0},
-    [YELLOW] = {4, 1},
-    [RED]    = {1, 14}
+    [GREEN]  = {1, 0}, //PB0
+    [YELLOW] = {4, 1}, //PE1
+    [RED]    = {1, 14} //PB14
 };
 
 void led_init(int led) {
-    // Set bus clock
+    // Set AHB4 bus clock
     switch (led) {
         case (GREEN):
         case (RED):
