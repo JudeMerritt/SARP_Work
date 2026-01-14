@@ -2255,6 +2255,8 @@
   static const field32_t QUADSPI_FCR_CTCF        = {.msk = 0x00000002U, .pos = 1};    /** @brief Clear transfer complete flag writing 1 clears the TCF flag in the QUADSPI_SR register. */
   static const field32_t QUADSPI_FCR_CSMF        = {.msk = 0x00000008U, .pos = 3};    /** @brief Clear status match flag writing 1 clears the SMF flag in the QUADSPI_SR register. */
   static const field32_t QUADSPI_FCR_CTOF        = {.msk = 0x00000010U, .pos = 4};    /** @brief Clear timeout flag writing 1 clears the TOF flag in the QUADSPI_SR register. */
+  static const field32_t QUADSPI_DLR_DL          = {.msk = 0xFFFFFFFFU, .pos = 0};    /** @brief Data length defines the number of data bytes to be transferred for a QUADSPI command. */
+  static const field32_t QUADSPI_CCR_REG         = {.msk = 0xFFFFFFFFU, .pos = 0};    /** @brief Allows you to write to the whole CCR register in one operation. */
   static const field32_t QUADSPI_CCR_INSTRUCTION = {.msk = 0x000000FFU, .pos = 0};    /** @brief Instruction instruction to be send to the external SPI device. This field can be written only when BUSY = 0. */
   static const field32_t QUADSPI_CCR_IMODE       = {.msk = 0x00000300U, .pos = 8};    /** @brief Instruction mode this field defines the instruction phase mode of operation: this field can be written only when BUSY = 0. */
   static const field32_t QUADSPI_CCR_ADMODE      = {.msk = 0x00000C00U, .pos = 10};   /** @brief Address mode this field defines the address phase mode of operation: this field can be written only when BUSY = 0. */
@@ -2267,6 +2269,8 @@
   static const field32_t QUADSPI_CCR_SIOO        = {.msk = 0x10000000U, .pos = 28};   /** @brief Send instruction only once mode see section15.3.11: sending the instruction only once on page13. This bit has no effect when IMODE = 00. This field can be written only when BUSY = 0. */
   static const field32_t QUADSPI_CCR_DHHC        = {.msk = 0x40000000U, .pos = 30};   /** @brief DDR hold delay the data output by 1/4 of the QUADSPI output clock cycle in DDR mode: this feature is only active in DDR mode. This field can be written only when BUSY = 0. */
   static const field32_t QUADSPI_CCR_DDRM        = {.msk = 0x80000000U, .pos = 31};   /** @brief Double data rate mode this bit sets the DDR mode for the address, alternate byte and data phase: this field can be written only when BUSY = 0. */
+  static const field32_t QUADSPI_AR_REG          = {.msk = 0xFFFFFFFFU, .pos = 0};    /** @brief Contains the address to be sent to external memory. */
+  static const field32_t QUADSPI_DR_REG          = {.msk = 0xFFFFFFFFU, .pos = 0};    /** @brief Used to read data sent to/from the external SPI device. */
   static const field32_t QUADSPI_PIR_INTERVAL    = {.msk = 0x0000FFFFU, .pos = 0};    /** @brief Polling interval number of CLK cycles between to read during automatic polling phases. This field can be written only when BUSY = 0. */
   static const field32_t QUADSPI_LPTR_TIMEOUT    = {.msk = 0x0000FFFFU, .pos = 0};    /** @brief Timeout period after each access in memory-mapped mode, the QUADSPI prefetches the subsequent bytes and holds these bytes in the FIFO. This field indicates how many CLK cycles the QUADSPI waits after the FIFO becomes full until it raises ncs, putting the flash memory in a lower-consumption state. This field can be written only when BUSY = 0. */
 

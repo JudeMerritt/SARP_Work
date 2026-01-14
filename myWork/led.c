@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include "include/mmio.h"
 #include "myWork/systick.h"
+#include "myWork/led.h"
 
 typedef enum {
     GREEN,
@@ -35,7 +36,6 @@ void led_init(int led) {
     WRITE_FIELD(GPIOx_MODER[LED_MAP[led].port], GPIOx_MODER_MODEx[LED_MAP[led].pin], 0b01);
 }
 
-// Toggle the led on or off
 void toggle_led(int led) {
     TOGL_FIELD(GPIOx_ODR[LED_MAP[led].port], GPIOx_ODR_ODx[LED_MAP[led].pin]);
 }
