@@ -1,6 +1,12 @@
 #include <stdint.h>
 #pragma once
 
+typedef enum {
+    GREEN,
+    YELLOW,
+    RED
+}led_t;
+
 /**
  * @brief Prepares one of the user LEDs to be toggled on or off.
  * 

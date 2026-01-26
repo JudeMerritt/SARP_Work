@@ -196,3 +196,7 @@ barometer_result_t *get_barometer_data(barometer_t *dev) {
 
     return ptr_result;
 }
+
+/**
+ * TODO: 
+ * 1. Do I need to initialize spi via spi_init or should the client do this before using the barometer */

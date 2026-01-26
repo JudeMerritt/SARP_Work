@@ -23,19 +23,12 @@ typedef struct {
     uint32_t data_size;
 } qspi_cmd_t;
 
-typedef struct {
-    uint8_t instruction;
-    uint8_t match_value;
-    uint8_t mask;
-    uint16_t interval;
-} qspi_poll_t;
-
 ti_errc_t qspi_init();
 
 ti_errc_t qspi_command(qspi_cmd_t *cmd, uint8_t *buf, bool is_read);
 
-ti_errc_t qspi_poll_status(qspi_poll_t *poll_cfg);
+ti_errc_t qspi_poll_status_blk();
 
-ti_errc_t qspi_enter_memory_mapped(qspi_cmd_t *read_cmd);
+ti_errc_t qspi_enter_memory_mapped(qspi_cmd_t *cmd);
 
 ti_errc_t qspi_exit_memory_mapped();

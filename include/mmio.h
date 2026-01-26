@@ -2273,6 +2273,8 @@
   static const field32_t QUADSPI_DR_REG          = {.msk = 0xFFFFFFFFU, .pos = 0};    /** @brief Used to read data sent to/from the external SPI device. */
   static const field32_t QUADSPI_PIR_INTERVAL    = {.msk = 0x0000FFFFU, .pos = 0};    /** @brief Polling interval number of CLK cycles between to read during automatic polling phases. This field can be written only when BUSY = 0. */
   static const field32_t QUADSPI_LPTR_TIMEOUT    = {.msk = 0x0000FFFFU, .pos = 0};    /** @brief Timeout period after each access in memory-mapped mode, the QUADSPI prefetches the subsequent bytes and holds these bytes in the FIFO. This field indicates how many CLK cycles the QUADSPI waits after the FIFO becomes full until it raises ncs, putting the flash memory in a lower-consumption state. This field can be written only when BUSY = 0. */
+  static const field32_t QUADSPI_PSMAR_REG       = {.msk = 0xFFFFFFFFU, .pos = 0};    /** @brief Used to set a match value for status-polling mode of quad spi. */
+  static const field32_t QUADSPI_PSMKR_REG       = {.msk = 0xFFFFFFFFU, .pos = 0};    /** @brief Used to set a mask for status-polling mode of quad spi. */
 
   /**********************************************************************************************
    * @section RNG Definitions

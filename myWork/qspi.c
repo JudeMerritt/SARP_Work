@@ -5,6 +5,9 @@
 #include "myWork/qspi.h"
 
 // Single-chip quadspi driver using flash 1 pins. 
+// This driver uses blocking. This may be problematic, as some 
+// flash operations can take a long time. It will likely be best to 
+// update this to use interrupts instead. 
 
 ti_errc_t qspi_init() {
     // Enable RHB3 clock and reset QSPI
@@ -109,14 +112,55 @@ ti_errc_t qspi_command(qspi_cmd_t *cmd, uint8_t *buf, bool is_read) {
     return TI_ERRC_NONE;
 }
 
+ti_errc_t qspi_poll_status_blk() {
+    // Set match and mask values to check busy bit
+    WRITE_FIELD(QUADSPI_PSMAR, QUADSPI_PSMAR_REG, 0x00); // Set match value
+    WRITE_FIELD(QUADSPI_PSMKR, QUADSPI_PSMKR_REG, 0x01); // Set mask value
+
+    // Set polling interval: how often QSPI is pulling the CS line low to "check-in" with flash
+    WRITE_FIELD(QUADSPI_PIR, QUADSPI_PIR_INTERVAL, 32U); // Wait 32 cycles per "check-in"
+
+    uint32_t ccr_val = (0b10 << 26)             | // Set FMODE to 0b10 for automatic polling mode
+                       (QSPI_MODE_SINGLE << 24) | // Data uses single qspi line
+                       (0U << 18)               | // No dummy bytes
+                       (QSPI_MODE_NONE << 10)   | // No address phase
+                       (QSPI_MODE_SINGLE << 8)  | // Instruction over single qspi line
+                       (0x05);                    // Read status register instruction
     
+    WRITE_FIELD(QUADSPI_CCR, QUADSPI_CCR_REG, ccr_val); // Write to all important fields at once
+
+    // Wait for the hardware match-flag
+    while (READ_FIELD(QUADSPI_SR, QUADSPI_SR_SMF) == 0);
+
+    WRITE_WOFIELD(QUADSPI_FCR, QUADSPI_FCR_CSMF, 1U); // Clear SMF 
+    while (READ_FIELD(QUADSPI_SR, QUADSPI_SR_BUSY) != 0); // Wait until not busy
+
+    return TI_ERRC_NONE;
+}
 
 ti_errc_t qspi_enter_memory_mapped(qspi_cmd_t *cmd) {
-    // Do stuff
+    // Ensure the QSPI is not busy
+    while (READ_FIELD(QUADSPI_SR, QUADSPI_SR_BUSY));
+
+    // Configure the CCR for Memory Mapped Mode 
+    uint32_t ccr_val = 
+        (0b11 << 26)               | // FMODE: 0b11 = Memory Mapped
+        (QSPI_MODE_SINGLE << 24)   | // DMODE: Data on 1 line
+        (8 << 18)                  | // DCYC: 8 dummy cycles (required for 0x0B)
+        (QSPI_MODE_SINGLE << 12)   | // ADSIZE: 24-bit address (0b10)
+        (QSPI_MODE_SINGLE << 10)   | // ADMODE: Address on 1 line
+        (QSPI_MODE_SINGLE << 8)    | // IMODE: Instruction on 1 line
+        (0x0B);                      // Instruction: Fast Read
+
+    WRITE_FIELD(QUADSPI_CCR, QUADSPI_CCR_REG, ccr_val);
 }
 
 ti_errc_t qspi_exit_memory_mapped() {
-    // Do stuff
+    // Abort any ongoing memory-mapped access
+    SET_BIT(QUADSPI_CR, QUADSPI_CR_ABORT);
+
+    while (READ_BIT(QUADSPI_CR, QUADSPI_CR_ABORT)); // Wait for the abort to complete
+    while (READ_FIELD(QUADSPI_SR, QUADSPI_SR_BUSY)); // Wait for the busy flag to clear
 }
 
 /**
@@ -136,3 +180,6 @@ ti_errc_t qspi_exit_memory_mapped() {
  * 5. I really like the pointer to the eight bit buffer so that you can portion out the data, but make sure that this appraoch 
  *    is valid. 
  */
+
+
+MAKE NEW TODOS SO THAT CODE CAN BE REVISED SUCCESSFULLY IN THE FUTURE
