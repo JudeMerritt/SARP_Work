@@ -20,8 +20,8 @@
  */
 
  #pragma once
- #include "util/include/errc.h"
- #include "internal/include/dma.h"
+ #include "include/errc.h"
+ #include "include/dma.h"
 
 /**************************************************************************************************
  * @section Macros

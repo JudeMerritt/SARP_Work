@@ -4465,6 +4465,7 @@
   static const field32_t RCC_C1_APB1HENR_FDCANEN            = {.msk = 0x00000100U, .pos = 8};    /** @brief FDCAN peripheral clocks enable. */
   static const field32_t RCC_C1_APB2ENR_DFSDM1EN            = {.msk = 0x10000000U, .pos = 28};   /** @brief DFSDM1 peripheral clocks enable. */
   static const field32_t RCC_C1_APB2ENR_HRTIMEN             = {.msk = 0x20000000U, .pos = 29};   /** @brief HRTIM peripheral clock enable. */
+  static const field32_t RCC_APB2ENR_SPI1EN                 = {.msk = 0x00001000U, .pos = 12};   /** @brief SPI1 peripheral clocks enable. */
   static const field32_t RCC_APB2ENR_DFSDM1EN               = {.msk = 0x10000000U, .pos = 28};   /** @brief DFSDM1 peripheral clocks enable. */
   static const field32_t RCC_APB2ENR_HRTIMEN                = {.msk = 0x20000000U, .pos = 29};   /** @brief HRTIM peripheral clock enable. */
   static const field32_t RCC_APB4ENR_SYSCFGEN               = {.msk = 0x00000002U, .pos = 1};    /** @brief SYSCFG peripheral clock enable. */

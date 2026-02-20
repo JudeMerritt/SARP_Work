@@ -21,8 +21,8 @@
 
 #pragma once
 
-#include "util/include/errc.h"
-#include "internal/include/dma.h"
+#include "include/errc.h"
+#include "include/dma.h"
 
 // This interface only supports a single I2C at a time.
 // Only I2C 1-3 are supported.
