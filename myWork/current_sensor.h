@@ -15,9 +15,9 @@ typedef enum {
 
 typedef struct {
     uint8_t i2c_address; // Deals with how you configure A0 and A1 pins
-    float shunt_res; // in Ohms
-    float max_expected_current;        //hardcode me!
-    current_sensor_perf_t performance; //hardcode me!
+    float shunt_res; // in Ohms        //hardcode me! (002 ohm +/- 1%)
+    float max_expected_current;        //hardcode me! (15A)
+    current_sensor_perf_t performance; 
 } current_sensor_config_t;
 
 // voltage in V, current in amps, power in watts, temp in celcius
