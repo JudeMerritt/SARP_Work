@@ -28,7 +28,7 @@ int spi_init(uint8_t inst);
  * @param dst   Pointer to the receive buffer.
  * @param size  Number of bytes to transfer.
  *
- * @return 1 when the transfer finishes successfully.
+ * @return 1 if the transfer finishes successfully.
  */
 int spi_transfer_sync(uint8_t inst, void* src, void* dst, uint8_t size);
 

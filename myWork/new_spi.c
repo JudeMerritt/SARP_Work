@@ -13,22 +13,18 @@ enum inst {
     INST_FIVE
 };
 
-static void toggle_cs_pin(uint8_t inst) {
+static void cs_low(uint8_t inst) {
     switch (inst) {
         case INST_ONE:
-            TOGL_FIELD(GPIOx_ODR[0], GPIOx_ODR_ODx[4]);
+            CLR_FIELD(GPIOx_ODR[0], GPIOx_ODR_ODx[4]);
             break;
-        case INST_TWO:
-            // ...
-            break;
-        case INST_THREE:
-            // ...
-            break;
-        case INST_FOUR:
-            // ...
-            break;
-        case INST_FIVE:
-            // ...
+    }
+}
+
+static void cs_high(uint8_t inst) {
+    switch (inst) {
+        case INST_ONE:
+            SET_FIELD(GPIOx_ODR[0], GPIOx_ODR_ODx[4]);
             break;
     }
 }
@@ -51,7 +47,7 @@ int spi_init(uint8_t inst) {
             WRITE_FIELD(GPIOx_AFRL[0], GPIOx_AFRL_AFSELx[5], 0b101);
             WRITE_FIELD(GPIOx_AFRL[0], GPIOx_AFRL_AFSELx[6], 0b101);
             WRITE_FIELD(GPIOx_AFRL[0], GPIOx_AFRL_AFSELx[7], 0b101);
-            // Set high speed
+            // Set very high speed
             WRITE_FIELD(GPIOx_OSPEEDR[0],GPIOx_OSPEEDR_OSPEEDx[5], 0b11);
             WRITE_FIELD(GPIOx_OSPEEDR[0],GPIOx_OSPEEDR_OSPEEDx[6], 0b11);
             WRITE_FIELD(GPIOx_OSPEEDR[0],GPIOx_OSPEEDR_OSPEEDx[7], 0b11);
@@ -100,7 +96,7 @@ int spi_init(uint8_t inst) {
     }
     
     // Ensure CS line is high
-    toggle_cs_pin(inst);
+    cs_high(inst);
 
     // Ensure SPI hardware is disabled before config
     CLR_FIELD(SPIx_CR1[inst], SPIx_CR1_SPE);
@@ -109,8 +105,8 @@ int spi_init(uint8_t inst) {
     CLR_FIELD(SPIx_CGFR[inst], SPIx_CGFR_I2SMOD);
     // Set threshold level
     WRITE_FIELD(SPIx_CFG1[inst], SPIx_CFG1_FTHVL, 0x0);
-    // Set baudrate prescaler ( /64 )
-    WRITE_FIELD(SPIx_CFG1[inst], SPIx_CFG1_MBR, 0b101); // TODO: Should be 000?
+    // Set baudrate prescaler ( /256 )
+    WRITE_FIELD(SPIx_CFG1[inst], SPIx_CFG1_MBR, 0b111); // TODO: Should be 000?
     // Set data size
     WRITE_FIELD(SPIx_CFG1[inst], SPIx_CFG1_DSIZE, 0b00111);
     // Set clock polarities
@@ -122,32 +118,33 @@ int spi_init(uint8_t inst) {
     // Set SPI as master
     SET_FIELD(SPIx_CFG2[inst], SPIx_CFG2_MASTER);
 
-    // Enable SPI
-    SET_FIELD(SPIx_CR1[inst], SPIx_CR1_SPE);
+    // // Enable SPI
+    // SET_FIELD(SPIx_CR1[inst], SPIx_CR1_SPE);
 
     return 1;
 }
 
 int spi_transfer_sync(uint8_t inst, void* src, void* dst, uint8_t size) {
-    // Pull CS pin low
-    toggle_cs_pin(inst);
-
     WRITE_FIELD(SPIx_CR2[inst], SPIx_CR2_TSIZE, size);
 
+    // Enable SPI
+    if (READ_FIELD(SPIx_CR1[inst], SPIx_CR1_SPE) == 0) {
+        SET_FIELD(SPIx_CR1[inst], SPIx_CR1_SPE);
+    }
+
+    // Pull CS pin low
+    cs_low(inst);
 
     while (!READ_FIELD(SPIx_SR[inst], SPIx_SR_TXP));
-    // Load first byte into TXDR
-    *(volatile uint8_t *)SPIx_TXDR[inst] = ((uint8_t *)src)[0];
-    // Start transfer
-    SET_FIELD(SPIx_CR1[inst], SPIx_CR1_CSTART);
 
     for (int i = 0; i < size; i++) {
-        if (i > 0) {
-            while (!READ_FIELD(SPIx_SR[inst], SPIx_SR_TXP));
+        while (!READ_FIELD(SPIx_SR[inst], SPIx_SR_TXP));
+        *(volatile uint8_t *)SPIx_TXDR[inst] = ((uint8_t *)src)[i];
 
-            *(volatile uint8_t *)SPIx_TXDR[inst] = ((uint8_t *)src)[i];
+        // Start transfer
+        if (i == 0) {
+            SET_FIELD(SPIx_CR1[inst], SPIx_CR1_CSTART);
         }
-        
 
         while (!READ_FIELD(SPIx_SR[inst], SPIx_SR_RXP) && !READ_FIELD(SPIx_SR[inst], SPIx_SR_EOT));
 
@@ -159,7 +156,7 @@ int spi_transfer_sync(uint8_t inst, void* src, void* dst, uint8_t size) {
 
     SET_FIELD(SPIx_IFCR[inst], SPIx_IFCR_EOTC);
 
-    toggle_cs_pin(inst);
+    cs_high(inst);
 
     return 1;
 }
