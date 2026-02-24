@@ -118,9 +118,6 @@ int spi_init(uint8_t inst) {
     // Set SPI as master
     SET_FIELD(SPIx_CFG2[inst], SPIx_CFG2_MASTER);
 
-    // // Enable SPI
-    // SET_FIELD(SPIx_CR1[inst], SPIx_CR1_SPE);
-
     return 1;
 }
 
