@@ -232,9 +232,9 @@ int spi_init(uint8_t inst) {
     if (inst < 4) {
         WRITE_FIELD(RCC_D2CCIP1R, RCC_D2CCIP1R_SPI123SRC, 0b100);
     } else if (inst == 4 || inst == 5) {
-        WRITE_FIELD(RCC_D2CCIP1R, RCC_D2CCIP1R_SPI45SRC, 0b100);
+        WRITE_FIELD(RCC_D2CCIP1R, RCC_D2CCIP1R_SPI45SRC, 0b011);
     } else { // (inst == 6)
-        WRITE_FIELD(RCC_D3CCIPR, RCC_D3CCIPR_SPI6SRC, 0b100);
+        WRITE_FIELD(RCC_D3CCIPR, RCC_D3CCIPR_SPI6SRC, 0b011);
     }
     // Enable SPI clock
     switch (inst) {
