@@ -70,7 +70,7 @@ typedef struct {
  * 
  * @return ti_errc_t TI_ERRC_NONE on success, or another error code on failure
  */
-ti_errc_t qspi_init();
+void qspi_init();
 
 /**
  * @brief sends a command to flash memory (read or write). Use qspi_poll_status_blk();
