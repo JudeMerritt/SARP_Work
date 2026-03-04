@@ -42,3 +42,6 @@ current_sensor_init(current_sensor_config_t config) {
     _current_lsb = config.max_expected_current / 524288; // divided by 2^19
     _power_lsb   = config.
 }
+
+
+// INCOMPLETE

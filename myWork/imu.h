@@ -36,4 +36,4 @@ void imu_init(struct imu_spi_dev* dev);
  * @param result  pointer to the result structure. 
  * @return 1 if the parameters are valid and -1 if not. 
  */
-int imu_transfer(struct imu_spi_dev* dev, struct result* result);
+int imu_read(struct imu_spi_dev* dev, struct result* result);
