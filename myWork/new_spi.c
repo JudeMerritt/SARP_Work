@@ -316,14 +316,15 @@ int spi_transfer_sync(uint8_t inst, uint8_t ss_pin, void* src, void* dst, uint8_
             SET_FIELD(SPIx_CR1[inst], SPIx_CR1_CSTART);
         }
 
-        while (!READ_FIELD(SPIx_SR[inst], SPIx_SR_RXP) && !READ_FIELD(SPIx_SR[inst], SPIx_SR_EOT));
+        while (!READ_FIELD(SPIx_SR[inst], SPIx_SR_RXP));
 
         ((uint8_t *)dst)[i] = *(volatile uint8_t *)SPIx_RXDR[inst];
     }
 
     // Wait for end of tranfer
     while (!READ_FIELD(SPIx_SR[inst], SPIx_SR_EOT));
-    SET_FIELD(SPIx_IFCR[inst], SPIx_IFCR_EOTC);
+    SET_WO_FIELD(SPIx_IFCR[inst], SPIx_IFCR_EOTC);
+    SET_WO_FIELD(SPIx_IFCR[inst], SPIx_IFCR_TXTFC);
 
     // Pull SS pin high to end transfer
     tal_set_pin(ss_pin, 1);
