@@ -1,4 +1,4 @@
-The folder titled "MyWork" contains some of my contributions to the firmware that runs on the flight computer of the Society for Advanced Rocket Propulsion's liquid rocket. 
+The folder titled "MyWork" contains some of my contributions to the firmware that will run on the flight computer of the Society for Advanced Rocket Propulsion's liquid rocket, Steelhead. 
 
 Flight computer software repository: https://github.com/SARP-UW/titan 
 
