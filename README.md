@@ -1,4 +1,4 @@
-The folder titled "MyWork" contains some of my contributions to the firmware that will run on the flight computer of the Society for Advanced Rocket Propulsion's liquid rocket, Steelhead. 
+The Society for Advanced Rocket Propulsion is one of the largest engineering clubs at the University of Washington. The folder titled "MyWork" contains some of my contributions to the firmware that will run on the flight computer of SARP's liquid bipropellant rocket, Steelhead. 
 
 Flight computer software repository: https://github.com/SARP-UW/titan 
 
