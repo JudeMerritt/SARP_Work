@@ -16,12 +16,13 @@
  * 
  * @file peripheral/spi.c
  * @authors Jude Merritt
- * @brief Implementation of SPI driver interface
+ * @brief Implementation of SPI driver
  */
 
-#include "myWork/new_spi.h"
-#include "include/mmio.h"
-#include "include/gpio.h"
+#include "peripheral/spi.h"
+#include "internal/mmio.h"
+#include "peripheral/gpio.h"
+#include "peripheral/errc.h"
 #include <stdint.h>
 
 #define INST1_SCK 44
@@ -87,9 +88,14 @@ static inline void ss_high(uint8_t* ss_list, uint8_t slave_count) {
     }
 }
 
-int spi_init(uint8_t inst, uint8_t* ss_list, uint8_t slave_count) {
+void spi_init(uint8_t inst, uint8_t mode, uint8_t* ss_list, uint8_t slave_count, enum ti_errc_t *errc) {
+    if (errc) *errc = TI_ERRC_NONE;
     if (inst > 6 || inst < 1) {
-        return -1;
+        TI_SET_ERRC(errc, TI_ERRC_INVALID_ARG, "SPI instance range error"); return;
+    }
+
+    if (mode > 3 || mode < 0) {
+        TI_SET_ERRC(errc, TI_ERRC_INVALID_ARG, "SPI mode range error"); return;
     }
 
     // Enable clocks for MOSI, MISO, and SCK
@@ -112,6 +118,8 @@ int spi_init(uint8_t inst, uint8_t* ss_list, uint8_t slave_count) {
         case INST_SIX:
             SET_FIELD(RCC_AHB4ENR, RCC_AHB4ENR_GPIOGEN);
             break;
+        default:
+            break;
     }
 
     // Enable clocks for all SS pins
@@ -130,9 +138,9 @@ int spi_init(uint8_t inst, uint8_t* ss_list, uint8_t slave_count) {
             tal_set_mode(INST1_MISO, 2);
             tal_set_mode(INST1_MOSI, 2);
             // Set alternate mode
-            tal_alternate_mode(INST1_SCK, 0101);
-            tal_alternate_mode(INST1_MISO, 0101);
-            tal_alternate_mode(INST1_MOSI, 0101);
+            tal_alternate_mode(INST1_SCK, 0b0101);
+            tal_alternate_mode(INST1_MISO, 0b0101);
+            tal_alternate_mode(INST1_MOSI, 0b0101);
             // Set very high speed
             tal_set_speed(INST1_SCK, 3);
             tal_set_speed(INST1_MISO, 3);
@@ -149,9 +157,9 @@ int spi_init(uint8_t inst, uint8_t* ss_list, uint8_t slave_count) {
             tal_set_mode(INST2_MISO, 2);
             tal_set_mode(INST2_MOSI, 2);
             // Set alternate mode
-            tal_alternate_mode(INST2_SCK, 0101);
-            tal_alternate_mode(INST2_MISO, 0101);
-            tal_alternate_mode(INST2_MOSI, 0101);
+            tal_alternate_mode(INST2_SCK, 0b0101);
+            tal_alternate_mode(INST2_MISO, 0b0101);
+            tal_alternate_mode(INST2_MOSI, 0b0101);
             // Set very high speed
             tal_set_speed(INST2_SCK, 3);
             tal_set_speed(INST2_MISO, 3);
@@ -168,9 +176,9 @@ int spi_init(uint8_t inst, uint8_t* ss_list, uint8_t slave_count) {
             tal_set_mode(INST3_MISO, 2);
             tal_set_mode(INST3_MOSI, 2);
             // Set alternate mode
-            tal_alternate_mode(INST3_SCK, 0110);
-            tal_alternate_mode(INST3_MISO, 0110);
-            tal_alternate_mode(INST3_MOSI, 0110);
+            tal_alternate_mode(INST3_SCK, 0b0110);
+            tal_alternate_mode(INST3_MISO, 0b0110);
+            tal_alternate_mode(INST3_MOSI, 0b0110);
             // Set very high speed
             tal_set_speed(INST3_SCK, 3);
             tal_set_speed(INST3_MISO, 3);
@@ -187,9 +195,9 @@ int spi_init(uint8_t inst, uint8_t* ss_list, uint8_t slave_count) {
             tal_set_mode(INST4_MISO, 2);
             tal_set_mode(INST4_MOSI, 2);
             // Set alternate mode
-            tal_alternate_mode(INST4_SCK, 0101);
-            tal_alternate_mode(INST4_MISO, 0101);
-            tal_alternate_mode(INST4_MOSI, 0101);
+            tal_alternate_mode(INST4_SCK, 0b0101);
+            tal_alternate_mode(INST4_MISO, 0b0101);
+            tal_alternate_mode(INST4_MOSI, 0b0101);
             // Set very high speed
             tal_set_speed(INST4_SCK, 3);
             tal_set_speed(INST4_MISO, 3);
@@ -206,9 +214,9 @@ int spi_init(uint8_t inst, uint8_t* ss_list, uint8_t slave_count) {
             tal_set_mode(INST5_MISO, 2);
             tal_set_mode(INST5_MOSI, 2);
             // Set alternate mode
-            tal_alternate_mode(INST5_SCK, 0101);
-            tal_alternate_mode(INST5_MISO, 0101);
-            tal_alternate_mode(INST5_MOSI, 0101);
+            tal_alternate_mode(INST5_SCK, 0b0101);
+            tal_alternate_mode(INST5_MISO, 0b0101);
+            tal_alternate_mode(INST5_MOSI, 0b0101);
             // Set very high speed
             tal_set_speed(INST5_SCK, 3);
             tal_set_speed(INST5_MISO, 3);
@@ -225,13 +233,15 @@ int spi_init(uint8_t inst, uint8_t* ss_list, uint8_t slave_count) {
             tal_set_mode(INST6_MISO, 2);
             tal_set_mode(INST6_MOSI, 2);
             // Set alternate mode
-            tal_alternate_mode(INST6_SCK, 0101);
-            tal_alternate_mode(INST6_MISO, 0101);
-            tal_alternate_mode(INST6_MOSI, 0101);
+            tal_alternate_mode(INST6_SCK, 0b0101);
+            tal_alternate_mode(INST6_MISO, 0b0101);
+            tal_alternate_mode(INST6_MOSI, 0b0101);
             // Set very high speed
             tal_set_speed(INST6_SCK, 3);
             tal_set_speed(INST6_MISO, 3);
             tal_set_speed(INST6_MOSI, 3);
+            break;
+        default:
             break;
     }
 
@@ -267,6 +277,8 @@ int spi_init(uint8_t inst, uint8_t* ss_list, uint8_t slave_count) {
         case INST_SIX:
             SET_FIELD(RCC_APB4ENR, RCC_APB4ENR_SPI6EN);
             break;
+        default:
+            break;
     }
     
     // Ensure SS lines are high
@@ -283,20 +295,43 @@ int spi_init(uint8_t inst, uint8_t* ss_list, uint8_t slave_count) {
     WRITE_FIELD(SPIx_CFG1[inst], SPIx_CFG1_MBR, 0b111); 
     // Set data size
     WRITE_FIELD(SPIx_CFG1[inst], SPIx_CFG1_DSIZE, 0b00111); // TODO: Ensure that this is lower than the slowest device's baudrate
+    
     // Set clock polarities
-    CLR_FIELD(SPIx_CFG2[inst], SPIx_CFG2_CPOL);
-    CLR_FIELD(SPIx_CFG2[inst], SPIx_CFG2_CPHA);
+    switch (mode) {
+        case MODE_0:
+            CLR_FIELD(SPIx_CFG2[inst], SPIx_CFG2_CPOL);
+            CLR_FIELD(SPIx_CFG2[inst], SPIx_CFG2_CPHA);
+            break;
+        case MODE_1:
+            CLR_FIELD(SPIx_CFG2[inst], SPIx_CFG2_CPOL);
+            SET_FIELD(SPIx_CFG2[inst], SPIx_CFG2_CPHA);
+            break;
+        case MODE_2:
+            SET_FIELD(SPIx_CFG2[inst], SPIx_CFG2_CPOL);
+            CLR_FIELD(SPIx_CFG2[inst], SPIx_CFG2_CPHA);
+            break;
+        case MODE_3:
+            SET_FIELD(SPIx_CFG2[inst], SPIx_CFG2_CPOL);
+            SET_FIELD(SPIx_CFG2[inst], SPIx_CFG2_CPHA);
+            break;
+        default:
+            return;
+    }
+
     // Slave management
     SET_FIELD(SPIx_CFG2[inst], SPIx_CFG2_SSM);
     SET_FIELD(SPIx_CR1[inst], SPIx_CR1_SSI);
     // Set SPI as master
     SET_FIELD(SPIx_CFG2[inst], SPIx_CFG2_MASTER);
 
-    return 1;
 }
 
-int spi_transfer_sync(uint8_t inst, uint8_t ss_pin, void* src, void* dst, uint8_t size) {
-    if (size == 0 || ss_pin > 255) return -1;
+void spi_transfer_sync (uint8_t inst, uint8_t ss_pin, void* src, void* dst, uint8_t size, enum ti_errc_t *errc) {
+    if (errc) *errc = TI_ERRC_NONE;
+    if (size == 0) {
+        TI_SET_ERRC(errc, TI_ERRC_INVALID_ARG, "Transfer size cannot be zero"); 
+        return; 
+    }
 
     CLR_FIELD(SPIx_CR1[inst], SPIx_CR1_SPE);
     WRITE_FIELD(SPIx_CR2[inst], SPIx_CR2_TSIZE, size);
@@ -328,6 +363,4 @@ int spi_transfer_sync(uint8_t inst, uint8_t ss_pin, void* src, void* dst, uint8_
 
     // Pull SS pin high to end transfer
     tal_set_pin(ss_pin, 1);
-
-    return 1;
 }

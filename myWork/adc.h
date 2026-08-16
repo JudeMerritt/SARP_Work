@@ -21,7 +21,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "include/errc.h"
+#include "peripheral/errc.h"
 
 #pragma once
 
@@ -31,7 +31,6 @@
 struct adc_spi_dev {
     uint8_t inst;
     uint8_t ss_pin;
-    // TODO: Include SPI mode in SPI (as it relates to Rising/falling edge & default high/low)
 };
 
 /**
@@ -118,7 +117,7 @@ struct adc_channel {
  * @param dev SPI specifications
  * @param errc TI_ERRC_NONE if no errors occur, otherwise an error code
  */
-void adc_init(struct adc_spi_dev* dev, ti_errc_t* errc);
+void adc_init(struct adc_spi_dev* device, enum ti_errc_t* errc);
 
 /**
  * @brief Configures the multiplexer/gain/ref based on the struct, waits, and reads the voltage of a channel.
@@ -128,7 +127,7 @@ void adc_init(struct adc_spi_dev* dev, ti_errc_t* errc);
  * @param errc TI_ERRC_NONE if no errors occur, otherwise an error code
  * @return the raw voltage of the specified channel
  */
-int adc_read_voltage(const struct adc_channel* channel, ti_errc_t* errc);
+int adc_read_voltage(const struct adc_channel* channel, enum ti_errc_t* errc);
 
 /**
  * @brief Reads two separate adc pins and returns the mathematical difference (pin1 - pin2)
@@ -138,7 +137,7 @@ int adc_read_voltage(const struct adc_channel* channel, ti_errc_t* errc);
  * @param errc TI_ERRC_NONE if no errors occur, otherwise an error code
  * @return the difference in voltage between channel1 and channel2
  */
-int adc_read_voltage_diff(struct adc_channel channel1, struct adc_channel channel2, ti_errc_t* errc);
+int adc_read_voltage_diff(struct adc_channel channel1, struct adc_channel channel2, enum ti_errc_t* errc);
 
 /**
  * @brief Sets the IDAC magnitude and routes it to specific pins. Only two pins can be set at a time.
@@ -148,7 +147,7 @@ int adc_read_voltage_diff(struct adc_channel channel1, struct adc_channel channe
  * @param pin2 the second ADC pin
  * @param errc TI_ERRC_NONE if no errors occur, otherwise an error code
  */
-void adc_set_idac(enum idac_mag magnitude, enum adc_pin pin1, enum adc_pin pin2, ti_errc_t* errc);
+void adc_set_idac(enum idac_mag magnitude, enum adc_pin pin1, enum adc_pin pin2, enum ti_errc_t* errc);
 
 /**
  * @brief Converts an AIN pin to a digital output or inupt and sets it HIGH or LOW.
@@ -158,7 +157,7 @@ void adc_set_idac(enum idac_mag magnitude, enum adc_pin pin1, enum adc_pin pin2,
  * @param output determines whether the ADC pin is output or input
  * @param errc TI_ERRC_NONE if no errors occur, otherwise an error code
  */
-void adc_set_gpio(enum adc_pin pin, bool default_high, bool input, ti_errc_t* errc);
+void adc_set_gpio(enum adc_pin pin, bool default_high, bool input, enum ti_errc_t* errc);
 
 /**
  * @brief Converts an AIN pin to a digital output and sets it HIGH (true) or LOW (false).
@@ -167,3 +166,5 @@ void adc_set_gpio(enum adc_pin pin, bool default_high, bool input, ti_errc_t* er
  * @return a String representing the name of hte channel
  */
 char* adc_get_channel_name(struct adc_channel channel);
+
+uint8_t adc_read_manufacturer_id(enum ti_errc_t* errc);

@@ -20,11 +20,11 @@
  */
 
 #include <stdint.h>
-#include "myWork/adc.h"
-#include "myWork/new_spi.h"
-#include "myWork/systick.h"
-#include "include/mmio.h"
-#include "include/errc.h"
+#include "devices/adc.h"
+#include "peripheral/spi.h"
+#include "peripheral/systick.h"
+#include "internal/mmio.h"
+#include "peripheral/errc.h"
 
 #define RESET 0x06
 #define START 0x08
@@ -43,9 +43,9 @@
 #define WRITE_BIT 0x40
 #define MAX_RREG_SIZE 6
 
-struct adc_spi_dev DEV;
+static struct adc_spi_dev dev;
 
-static int spi_rreg(uint8_t reg_addr, uint8_t data_size, ti_errc_t* errc) {
+static int spi_rreg(uint8_t reg_addr, uint8_t data_size, enum ti_errc_t* errc) {
     if (data_size > (MAX_RREG_SIZE - 2) || data_size == 0) {
         *errc = TI_ERRC_INVALID_ARG;
         return -1;
@@ -59,7 +59,7 @@ static int spi_rreg(uint8_t reg_addr, uint8_t data_size, ti_errc_t* errc) {
 
     // Two command bytes + the number of registers to read
     uint8_t tot_size = 2 + data_size;
-    *errc = spi_transfer_sync(DEV.inst, DEV.ss_pin, src, dst, tot_size); // TODO: Make sure that SPI is returning an actual error code
+    spi_transfer_sync(dev.inst, dev.ss_pin, src, dst, tot_size, errc); // TODO: Make sure that SPI is returning an actual error code
 
     if (*errc != TI_ERRC_NONE) {
         return -1;
@@ -73,7 +73,7 @@ static int spi_rreg(uint8_t reg_addr, uint8_t data_size, ti_errc_t* errc) {
     return result;
 }
 
-static void spi_wreg(uint8_t reg_addr, uint16_t data_size, uint32_t data, ti_errc_t* errc) { 
+static void spi_wreg(uint8_t reg_addr, uint16_t data_size, uint32_t data, enum ti_errc_t* errc) { 
     if (data_size > (MAX_RREG_SIZE - 2) || data_size == 0) {
         *errc = TI_ERRC_INVALID_ARG;
         return;
@@ -91,10 +91,10 @@ static void spi_wreg(uint8_t reg_addr, uint16_t data_size, uint32_t data, ti_err
     }
 
     uint8_t tot_size = 2 + data_size;
-    *errc = spi_transfer_sync(DEV.inst, DEV.ss_pin, src, dst, tot_size);
+    spi_transfer_sync(dev.inst, dev.ss_pin, src, dst, tot_size, errc);
 }
 
-static int32_t spi_single_command(uint8_t cmd, uint8_t transfer_size, ti_errc_t* errc) {
+static int32_t spi_single_command(uint8_t cmd, uint8_t transfer_size, enum ti_errc_t* errc) {
     if (transfer_size < 1 || transfer_size > 4) {
         *errc = TI_ERRC_INVALID_ARG;
 
@@ -104,7 +104,7 @@ static int32_t spi_single_command(uint8_t cmd, uint8_t transfer_size, ti_errc_t*
     uint8_t src[4] = {cmd, 0, 0, 0};
     uint8_t dst[4] = {0, 0, 0, 0};
 
-    *errc = spi_transfer_sync(DEV.inst, DEV.ss_pin, src, dst, transfer_size);  
+    spi_transfer_sync(dev.inst, dev.ss_pin, src, dst, transfer_size, errc); 
 
     if (*errc != TI_ERRC_NONE) {
         return -1;
@@ -112,20 +112,21 @@ static int32_t spi_single_command(uint8_t cmd, uint8_t transfer_size, ti_errc_t*
 
     if (transfer_size == 1) {
         return dst[0];
-    } else {
-        int32_t result = (dst[1] << 16) | (dst[2] << 8) | dst[3];
-        return result;
     } 
+    
+    int32_t result = (dst[1] << 16) | (dst[2] << 8) | dst[3];
+    return result;
+    
 }
 
-void adc_init(struct adc_spi_dev *dev, ti_errc_t* errc) {
-    if (dev->inst < 1 || dev->inst > 6) {
+void adc_init(struct adc_spi_dev *device, enum ti_errc_t* errc) {
+    if (device->inst < 1 || device->inst > 6) {
         *errc = TI_ERRC_INVALID_ARG;
         return;
     }
 
     *errc = TI_ERRC_NONE;
-    DEV  = *dev;
+    dev  = *device;
 
     // Reset ADC
     uint8_t err = spi_single_command(RESET, 1, errc);
@@ -134,7 +135,12 @@ void adc_init(struct adc_spi_dev *dev, ti_errc_t* errc) {
     }
 
     // Delay recommended by datasheet after RESET
-    systick_delay(5);
+    //systick_delay(5); // TODO: Why is this getting stuck?
+    for (int i = 0; i < 100000; i++) {
+        asm("NOP");
+    }
+
+     spi_single_command(START, 1, errc);
 
     // Wait until ADC is ready for communication
     bool is_ready = false;
@@ -156,8 +162,8 @@ void adc_init(struct adc_spi_dev *dev, ti_errc_t* errc) {
     spi_wreg(REF_REG, 1, 0x12, errc);
 }
 
-int adc_read_voltage(const struct adc_channel* channel, ti_errc_t* errc) {
-    if (DEV.inst < 1 || DEV.inst > 6 || !channel) {
+int adc_read_voltage(const struct adc_channel* channel, enum ti_errc_t* errc) {
+    if (dev.inst < 1 || dev.inst > 6 || !channel) {
         *errc = TI_ERRC_INVALID_ARG;
         return -1;
     }
@@ -205,7 +211,7 @@ int adc_read_voltage(const struct adc_channel* channel, ti_errc_t* errc) {
     return (int32_t)(final_voltage * 1000);
 }
 
-int adc_read_voltage_diff(struct adc_channel channel1, struct adc_channel channel2, ti_errc_t* errc) { 
+int adc_read_voltage_diff(struct adc_channel channel1, struct adc_channel channel2, enum ti_errc_t* errc) { 
     int32_t voltage1 = adc_read_voltage(&channel1, errc);
     int32_t voltage2 = adc_read_voltage(&channel2, errc);
 
@@ -213,8 +219,8 @@ int adc_read_voltage_diff(struct adc_channel channel1, struct adc_channel channe
 }
 
 // You don't need to disconnect a pin to change the idac pins
-void adc_set_idac(enum idac_mag magnitude, enum adc_pin pin1, enum adc_pin pin2, ti_errc_t* errc) {
-    if (DEV.inst < 1 || DEV.inst > 6) {
+void adc_set_idac(enum idac_mag magnitude, enum adc_pin pin1, enum adc_pin pin2, enum ti_errc_t* errc) {
+    if (dev.inst < 1 || dev.inst > 6) {
         *errc = TI_ERRC_INVALID_ARG;
         return;
     }
@@ -230,8 +236,8 @@ void adc_set_idac(enum idac_mag magnitude, enum adc_pin pin1, enum adc_pin pin2,
     spi_wreg(IDACMUX_REG, 1, mux_pins, errc);
 }
 
-void adc_set_gpio(enum adc_pin pin, bool default_high, bool input, ti_errc_t* errc) {
-    if (DEV.inst < 1 || DEV.inst > 6) {
+void adc_set_gpio(enum adc_pin pin, bool default_high, bool input, enum ti_errc_t* errc) {
+    if (dev.inst < 1 || dev.inst > 6) {
         *errc = TI_ERRC_INVALID_ARG;
         return;
     }
@@ -240,7 +246,7 @@ void adc_set_gpio(enum adc_pin pin, bool default_high, bool input, ti_errc_t* er
     uint8_t gpio_idx = pin - 0x08;
 
     // Enable GPIO function
-    uint8_t gpiocon_val;
+    uint8_t gpiocon_val = 0;
     gpiocon_val |= (1 << gpio_idx);
     spi_wreg(GPIOCON_REG, 1, gpiocon_val, errc);
     if (*errc != TI_ERRC_NONE) {
@@ -254,6 +260,8 @@ void adc_set_gpio(enum adc_pin pin, bool default_high, bool input, ti_errc_t* er
         gpiodat_val = 1 << gpio_idx;
     } else if (!default_high && input) {
         gpiodat_val = 1 << (gpio_idx + 4);
+    } else {
+        gpiodat_val = 0;
     } 
 
     // Set as output/input and default high/low
@@ -264,13 +272,18 @@ char* adc_get_channel_name(struct adc_channel channel) {
     return channel.name;
 }
 
+uint8_t adc_read_manufacturer_id(enum ti_errc_t* errc) {
+    *errc = TI_ERRC_NONE;
+
+    uint8_t id = spi_rreg(0x00, 1, errc); 
+    return id;
+}
+
 
 /**
  * Notes:
  * 1. Start and reset pins are perminently tied to high, clk is tied to low, and data ready is left hanging. 
  * Only standard spi pins are used.
  * 
- * 2. TODO: Reduce magic numbers. For example STATUS_REG & 0x40 is RDY_FLAG.
- * 
- * 4. If errc is not TI_ERRC_NONE the return value has no meaning **
+ * 2. If errc is not TI_ERRC_NONE the return value has no meaning **
  */

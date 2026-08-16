@@ -21,7 +21,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "include/mmio.h"
+#include "../internal/mmio.h"
 #include "errc.h"
 #include "qspi.h"
 
@@ -82,14 +82,57 @@ void qspi_init() {
     SET_FIELD(QUADSPI_CR, QUADSPI_CR_EN);               // Enable quadspi
 }
 
-ti_errc_t qspi_command_blk(qspi_cmd_t *cmd, uint8_t *buf, bool is_read) {
-    if (READ_FIELD(QUADSPI_SR, QUADSPI_SR_BUSY)) return TI_ERRC_BUSY;
+static void send_wren_cmd(enum ti_errc_t *errc) {
+    qspi_cmd_t cmd;
+    cmd.instruction = 0x06; // Write enable instruction
+    cmd.instruction_mode = QSPI_MODE_SINGLE;
+    cmd.address_mode = QSPI_MODE_NONE;
+    cmd.address_size = 0;
+    cmd.dummy_cycles = 0;
+    cmd.data_mode = QSPI_MODE_NONE;
+    cmd.data_size = 0;
+
+    // Directly write the command without going through qspi_send_cmd to avoid recursion
+    if (READ_FIELD(QUADSPI_SR, QUADSPI_SR_BUSY)) {
+        *errc = TI_ERRC_BUSY;
+        return;
+    }
+
+    *errc = TI_ERRC_NONE;
+
+    uint32_t ccr_val = (0b00 << 26)                |  // FMODE = 0b00 (indirect write mode)
+                       (QSPI_MODE_NONE << 24)       |  // Data mode
+                       (0U << 18)                    |  // No dummy cycles
+                       (QSPI_MODE_NONE << 10)        |  // No address phase
+                       (QSPI_MODE_SINGLE << 8)       |  // Instruction over single qspi line
+                       0x06;                         // Write enable instruction
+
+    WRITE_FIELD(QUADSPI_CCR, QUADSPI_CCR_REG, ccr_val);
+
+    // Wait for the busy flag and transfer complete flag
+    while (!READ_FIELD(QUADSPI_SR, QUADSPI_SR_TCF));
+    while (READ_FIELD(QUADSPI_SR, QUADSPI_SR_BUSY));
+
+    WRITE_WO_FIELD(QUADSPI_FCR, QUADSPI_FCR_CTCF, 1U);
+    WRITE_WO_FIELD(QUADSPI_FCR, QUADSPI_FCR_CTEF, 1U);
+}
+
+void qspi_send_cmd(qspi_cmd_t *cmd, uint8_t *data, bool is_read, enum ti_errc_t *errc) {
+    if (READ_FIELD(QUADSPI_SR, QUADSPI_SR_BUSY)) {
+        *errc = TI_ERRC_BUSY;
+        return;
+    }
+
+    *errc = TI_ERRC_NONE;
 
     if (cmd->data_size > 0) {
         WRITE_FIELD(QUADSPI_DLR, QUADSPI_DLR_DL, cmd->data_size - 1);
     }
 
-    uint32_t fmode = is_read ? 0b01 : 0b00;             
+    uint32_t fmode = 0b00;
+    if (is_read) {
+        fmode = 0b01;
+    }
 
     uint32_t ccr_val = (fmode << 26)                |  // Combine all QUADSPI_CCR fields into one 32-bit value
                        (cmd->data_mode << 24)       |  // ----------------------------------------------------
@@ -112,11 +155,11 @@ ti_errc_t qspi_command_blk(qspi_cmd_t *cmd, uint8_t *buf, bool is_read) {
         if (is_read) {
             while (READ_FIELD(QUADSPI_SR, QUADSPI_SR_FLEVEL) == 0);
             
-            buf[i] = (uint8_t)READ_FIELD(QUADSPI_DR, QUADSPI_DR_REG); 
+            data[i] = (uint8_t)READ_FIELD(QUADSPI_DR, QUADSPI_DR_REG); 
         } else { // (is_write)
             while (READ_FIELD(QUADSPI_SR, QUADSPI_SR_FLEVEL) >= 32);  
             
-            WRITE_FIELD(QUADSPI_DR, QUADSPI_DR_REG, buf[i]);          
+            WRITE_FIELD(QUADSPI_DR, QUADSPI_DR_REG, data[i]);          
         }
     }
 
@@ -126,11 +169,9 @@ ti_errc_t qspi_command_blk(qspi_cmd_t *cmd, uint8_t *buf, bool is_read) {
     
     WRITE_WO_FIELD(QUADSPI_FCR, QUADSPI_FCR_CTCF, 1U); 
     WRITE_WO_FIELD(QUADSPI_FCR, QUADSPI_FCR_CTEF, 1U); 
-
-    return TI_ERRC_NONE;
 }
 
-ti_errc_t qspi_poll_status_blk() {
+void qspi_poll_status_blk() {
     // Stop automatic polling mode after a match
     SET_FIELD(QUADSPI_CR, QUADSPI_CR_APMS);
 
@@ -144,7 +185,7 @@ ti_errc_t qspi_poll_status_blk() {
                        (0U << 18)               | // No dummy bytes
                        (QSPI_MODE_NONE << 10)   | // No address phase
                        (QSPI_MODE_SINGLE << 8)  | // Instruction over single qspi line
-                       (0x05);                    // Read status register instruction                   
+                       0x05;                    // Read status register instruction                   
 
     // Write to CCR
     WRITE_FIELD(QUADSPI_CCR, QUADSPI_CCR_REG, ccr_val); 
@@ -157,11 +198,10 @@ ti_errc_t qspi_poll_status_blk() {
     while (READ_FIELD(QUADSPI_SR, QUADSPI_SR_BUSY)); 
     
     CLR_FIELD(QUADSPI_CR, QUADSPI_CR_APMS);
-
-    return TI_ERRC_NONE;
 }
 
-ti_errc_t qspi_enter_memory_mapped(qspi_cmd_t *cmd) {
+void qspi_enter_memory_mapped(qspi_cmd_t *cmd) {
+    (void)cmd;
     // Ensure the QSPI is not busy
     while (READ_FIELD(QUADSPI_SR, QUADSPI_SR_BUSY));
 
@@ -173,20 +213,16 @@ ti_errc_t qspi_enter_memory_mapped(qspi_cmd_t *cmd) {
         (QSPI_MODE_SINGLE << 12)   | // ADSIZE: 24-bit address (0b10)
         (QSPI_MODE_SINGLE << 10)   | // ADMODE: Address on 1 line
         (QSPI_MODE_SINGLE << 8)    | // IMODE: Instruction on 1 line
-        (0x0B);                      // Instruction: Fast Read
+        0x0B;                      // Instruction: Fast Read
 
     WRITE_FIELD(QUADSPI_CCR, QUADSPI_CCR_REG, ccr_val);
-
-    return TI_ERRC_NONE;
 }
 
-ti_errc_t qspi_exit_memory_mapped() {
+void qspi_exit_memory_mapped() {
     // Abort any ongoing memory-mapped access
     SET_FIELD(QUADSPI_CR, QUADSPI_CR_ABORT);
 
     // Wait for busy and abort flags
     while (READ_FIELD(QUADSPI_CR, QUADSPI_CR_ABORT)); 
     while (READ_FIELD(QUADSPI_SR, QUADSPI_SR_BUSY)); 
-
-    return TI_ERRC_NONE;
 }
